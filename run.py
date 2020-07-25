@@ -25,7 +25,6 @@ while any(urls_queue):
 
     print(f"Current URL: {current_url}")
     print(f"Queue size {len(urls_queue)}")
-    print(f"Queue: {urls_queue}")
 
     try:
         response = requests.get(current_url)
@@ -53,10 +52,14 @@ while any(urls_queue):
         else:
             site_foreign_urls.add(url)
 
-    print(f"Local urls [{len(site_local_urls)}]: {site_local_urls}")
-    print(f"Foreign urls [{len(site_foreign_urls)}]: {site_foreign_urls}")
-
     for local_url in site_local_urls:
-        if local_url not in urls_queue and local_url not in processed_urls:
+        if (
+            local_url not in urls_queue and local_url not in processed_urls
+        ) and local_url not in site_foreign_urls:
             print("Appending queue: ", local_url)
             urls_queue.append(local_url)
+
+print(f"Processed URLs [{len(processed_urls)}]: {processed_urls}")
+print(f"Local URLs [{len(site_local_urls)}]: {site_local_urls}")
+print(f"Foreign URLs [{len(site_foreign_urls)}]: {site_foreign_urls}")
+print(f"Broken URLs [{len(site_broken_urls)}]: {site_broken_urls}")
