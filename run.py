@@ -12,7 +12,7 @@ from requests.exceptions import (
 )
 
 
-def init(base_url, limit=0, restrict=True, snap=False):
+def init(base_url, hostname, limit=0, restrict=True, snap=False):
     urls_queue = deque([base_url])
     processed_urls = set()
     site_local_urls = set()
@@ -20,7 +20,7 @@ def init(base_url, limit=0, restrict=True, snap=False):
     site_broken_urls = set()
 
     while any(urls_queue):
-        if len(processed_urls) >= limit:
+        if len(processed_urls) >= limit and limit != 0:
             break
 
         current_url = urls_queue.popleft()
@@ -47,18 +47,16 @@ def init(base_url, limit=0, restrict=True, snap=False):
             # Find href attr
             attr = anchor.attrs.get("href") if "href" in anchor.attrs else None
             # Join relative URLs
-            url = urljoin(BASE_URL, attr)
+            url = urljoin(base_url, attr)
 
             # Check if url is local or foreign
-            if HOSTNAME in url:
+            if hostname in url:
                 site_local_urls.add(url)
             else:
                 site_foreign_urls.add(url)
 
         for local_url in site_local_urls:
-            if (
-                local_url not in urls_queue and local_url not in processed_urls
-            ) and local_url not in site_foreign_urls:
+            if local_url not in urls_queue and local_url not in processed_urls:
                 urls_queue.append(local_url)
 
     print(f"Processed URLs [{len(processed_urls)}]: {processed_urls}")
@@ -129,17 +127,18 @@ if __name__ == "__main__":
 
     args = vars(cli_args().parse_args())
 
-    BASE_URL = args.get("url", None)
-    HOSTNAME = urlparse(BASE_URL).hostname
+    base_url = args.get("url", None)
+    hostname = urlparse(base_url).hostname
 
     limit = args.get("limit", None)
     restrict = args.get("restrict", None)
     snap = args.get("snap", None)
 
     print("-------------------------------------------")
-    print(f"Base url: {BASE_URL}\nHostname: {HOSTNAME}")
+    print(f"Base url: {base_url}\nHostname: {hostname}")
     print(f"Limit of foreign URLs: {limit}")
     print(f"Restrict search to it's original domain URL: {restrict}")
     print(f"Save snap of every processed URL: {snap}")
     print("-------------------------------------------\n")
-    init(BASE_URL, limit, restrict, snap)
+
+    init(base_url, hostname, limit, restrict, snap)
