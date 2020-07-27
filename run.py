@@ -20,6 +20,9 @@ def init(base_url, limit=0, restrict=True, snap=False):
     site_broken_urls = set()
 
     while any(urls_queue):
+        if len(processed_urls) >= limit:
+            break
+
         current_url = urls_queue.popleft()
         processed_urls.add(current_url)
 
