@@ -12,64 +12,8 @@ from requests.exceptions import (
 )
 
 
-def str2bool(value):
-    if isinstance(value, bool):
-        return value
-    if value.lower() in ("yes", "true", "t", "y", "1"):
-        return True
-    elif value.lower() in ("no", "false", "f", "n", "0"):
-        return False
-    else:
-        raise argparse.ArgumentTypeError("Boolean value expected.")
-
-
-def cli_args():
-    description = "A program to scrape site URLs and download its content as .html or save the URLs as JSON"
-    args = argparse.ArgumentParser(description=description)
-
-    args.add_argument(
-        "--url",
-        "-u",
-        help="Start point website to be mapped, i.e 'http://example.org'",
-        required=True,
-    )
-    args.add_argument(
-        "--file",
-        "-f",
-        help="File name used to save the urls, i.e 'urls.json'",
-        required=True,
-    )
-    args.add_argument(
-        "--snap",
-        "-s",
-        default=False,
-        help="Save each url page on a .html file. i.e 'snapshot/url-path.html'. By default is False",
-        nargs="?",
-        required=False,
-        type=str2bool,
-    )
-    args.add_argument(
-        "--restrict",
-        "-r",
-        const=True,
-        default=True,
-        help="Restric search to it's original domain URL. By default is True",
-        nargs="?",
-        required=False,
-        type=str2bool,
-    )
-
-    return args
-
-
-if __name__ == "__main__":
-
-    args = vars(cli_args().parse_args())
-
-    BASE_URL = "https://scrapethissite.com/"
-    HOSTNAME = urlparse(BASE_URL).hostname
-
-    urls_queue = deque([BASE_URL])
+def init(base_url, limit=0, restrict=True, snap=False):
+    urls_queue = deque([base_url])
     processed_urls = set()
     site_local_urls = set()
     site_foreign_urls = set()
@@ -112,10 +56,87 @@ if __name__ == "__main__":
             if (
                 local_url not in urls_queue and local_url not in processed_urls
             ) and local_url not in site_foreign_urls:
-                print("Appending queue: ", local_url)
                 urls_queue.append(local_url)
 
     print(f"Processed URLs [{len(processed_urls)}]: {processed_urls}")
     print(f"Local URLs [{len(site_local_urls)}]: {site_local_urls}")
     print(f"Foreign URLs [{len(site_foreign_urls)}]: {site_foreign_urls}")
     print(f"Broken URLs [{len(site_broken_urls)}]: {site_broken_urls}")
+
+
+def str2bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif value.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
+def cli_args():
+    description = "A program to scrape site URLs and download its content as .html or save the URLs as JSON"
+    args = argparse.ArgumentParser(description=description)
+
+    args.add_argument(
+        "--url",
+        "-u",
+        help="Start point website to be mapped, i.e 'http://example.org'",
+        required=True,
+    )
+    args.add_argument(
+        "--file",
+        "-f",
+        help="File name used to save the urls, i.e 'urls.json'",
+        required=True,
+    )
+    args.add_argument(
+        "--limit",
+        "-l",
+        default=0,
+        help="Limit the number of foreign urls. 0 to unlimited",
+        required=False,
+        type=int,
+    )
+    args.add_argument(
+        "--snap",
+        "-s",
+        default=False,
+        help="Save each url page on a .html file. i.e 'snapshot/url-path.html'. By default is False",
+        nargs="?",
+        required=False,
+        type=str2bool,
+    )
+    args.add_argument(
+        "--restrict",
+        "-r",
+        const=True,
+        default=True,
+        help="Restric search to it's original domain URL. By default is True",
+        nargs="?",
+        required=False,
+        type=str2bool,
+    )
+
+    return args
+
+
+if __name__ == "__main__":
+
+    args = vars(cli_args().parse_args())
+
+    BASE_URL = args.get("url", None)
+    HOSTNAME = urlparse(BASE_URL).hostname
+
+    limit = args.get("limit", None)
+    restrict = args.get("restrict", None)
+    snap = args.get("snap", None)
+
+    print("-------------------------------------------")
+    print(f"Base url: {BASE_URL}\nHostname: {HOSTNAME}")
+    print(f"Limit of foreign URLs: {limit}")
+    print(f"Restrict search to it's original domain URL: {restrict}")
+    print(f"Save snap of every processed URL: {snap}")
+    print("-------------------------------------------\n")
+    init(BASE_URL, limit, restrict, snap)
