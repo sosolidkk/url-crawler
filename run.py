@@ -13,6 +13,14 @@ from requests.exceptions import (
 )
 
 
+def save_snap(current_url, soup):
+    current_url = current_url.replace("https://", "")
+    current_url = current_url.replace("/", "-")
+
+    with open(f"snaps/{current_url}.html", "w") as file_writer:
+        file_writer.write(soup.prettify())
+
+
 def init(base_url, hostname, limit=0, restrict=True, snap=False):
     urls_queue = deque([base_url])
     processed_urls = set()
@@ -47,6 +55,9 @@ def init(base_url, hostname, limit=0, restrict=True, snap=False):
 
         soup = bs(response.text, "html.parser")
         anchor_tags = soup.find_all("a")
+
+        if snap:
+            save_snap(current_url, soup)
 
         for anchor in anchor_tags:
             # Find href attr
