@@ -140,7 +140,6 @@ def cli_args():
 
 
 if __name__ == "__main__":
-
     args = vars(cli_args().parse_args())
 
     base_url = args.get("url", None)
