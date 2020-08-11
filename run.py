@@ -1,5 +1,6 @@
 import argparse
 from collections import deque
+from os import mkdir, path
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -18,6 +19,10 @@ def init(base_url, hostname, limit=0, restrict=True, snap=False):
     site_local_urls = set()
     site_foreign_urls = set()
     site_broken_urls = set()
+
+    if snap:
+        if not path.exists("snaps/"):
+            mkdir("snaps")
 
     while any(urls_queue):
         if len(processed_urls) >= limit and limit != 0:
