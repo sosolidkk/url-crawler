@@ -1,4 +1,5 @@
 import argparse
+import json
 from collections import deque
 from os import mkdir, path
 from urllib.parse import urljoin, urlparse
@@ -13,6 +14,12 @@ from requests.exceptions import (
 )
 
 
+def set_default(obj):
+    if isinstance(obj, set):
+        return list(obj)
+    raise TypeError
+
+
 def save_snap(current_url, soup):
     current_url = current_url.replace("https://", "")
     current_url = current_url.replace("/", "-")
@@ -21,12 +28,35 @@ def save_snap(current_url, soup):
         file_writer.write(soup.prettify())
 
 
+def save_report(report):
+    with open("report.json", "w") as json_file:
+        json.dump(report, fp=json_file, sort_keys=True, indent=4)
+
+
+def generate_report(processed_urls, local_urls, foreign_urls, broken_urls):
+    report = {}
+
+    report["processed_urls"] = {
+        "qty": len(processed_urls),
+        "urls": set_default(processed_urls),
+    }
+    report["local_urls"] = {"qty": len(local_urls), "urls": set_default(local_urls)}
+    report["foreign_urls"] = {
+        "qty": len(foreign_urls),
+        "urls": set_default(foreign_urls),
+    }
+    report["broken_urls"] = {"qty": len(broken_urls), "urls": set_default(broken_urls)}
+
+    save_report(report)
+
+
 def init(base_url, hostname, limit=0, restrict=True, snap=False):
     urls_queue = deque([base_url])
+
     processed_urls = set()
-    site_local_urls = set()
-    site_foreign_urls = set()
-    site_broken_urls = set()
+    local_urls = set()
+    foreign_urls = set()
+    broken_urls = set()
 
     if snap:
         if not path.exists("snaps/"):
@@ -45,7 +75,7 @@ def init(base_url, hostname, limit=0, restrict=True, snap=False):
         try:
             response = requests.get(current_url)
         except (ConnectionError, InvalidURL, InvalidSchema, MissingSchema):
-            site_broken_urls.add(current_url)
+            broken_urls.add(current_url)
             continue
 
         if "Content-Type" in response.headers:
@@ -60,25 +90,19 @@ def init(base_url, hostname, limit=0, restrict=True, snap=False):
             save_snap(current_url, soup)
 
         for anchor in anchor_tags:
-            # Find href attr
             attr = anchor.attrs.get("href") if "href" in anchor.attrs else None
-            # Join relative URLs
             url = urljoin(base_url, attr)
 
-            # Check if url is local or foreign
             if hostname in url:
-                site_local_urls.add(url)
+                local_urls.add(url)
             else:
-                site_foreign_urls.add(url)
+                foreign_urls.add(url)
 
-        for local_url in site_local_urls:
+        for local_url in local_urls:
             if local_url not in urls_queue and local_url not in processed_urls:
                 urls_queue.append(local_url)
 
-    print(f"Processed URLs [{len(processed_urls)}]: {processed_urls}")
-    print(f"Local URLs [{len(site_local_urls)}]: {site_local_urls}")
-    print(f"Foreign URLs [{len(site_foreign_urls)}]: {site_foreign_urls}")
-    print(f"Broken URLs [{len(site_broken_urls)}]: {site_broken_urls}")
+    generate_report(processed_urls, local_urls, foreign_urls, broken_urls)
 
 
 def str2bool(value):
@@ -102,12 +126,7 @@ def cli_args():
         help="Start point website to be mapped, i.e 'http://example.org'",
         required=True,
     )
-    args.add_argument(
-        "--file",
-        "-f",
-        help="File name used to save the urls, i.e 'urls.json'",
-        required=True,
-    )
+
     args.add_argument(
         "--limit",
         "-l",
@@ -116,6 +135,7 @@ def cli_args():
         required=False,
         type=int,
     )
+
     args.add_argument(
         "--snap",
         "-s",
@@ -125,6 +145,7 @@ def cli_args():
         required=False,
         type=str2bool,
     )
+
     args.add_argument(
         "--restrict",
         "-r",
@@ -151,9 +172,11 @@ if __name__ == "__main__":
 
     print("-------------------------------------------")
     print(f"Base url: {base_url}\nHostname: {hostname}")
-    print(f"Limit of foreign URLs: {limit}")
+    print(f"Limit of processed URLs: {limit}")
     print(f"Restrict search to it's original domain URL: {restrict}")
     print(f"Save snap of every processed URL: {snap}")
     print("-------------------------------------------\n")
 
     init(base_url, hostname, limit, restrict, snap)
+
+    print("Finished! Created report.json file with insights.")
