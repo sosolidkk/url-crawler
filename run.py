@@ -40,12 +40,18 @@ def generate_report(processed_urls, local_urls, foreign_urls, broken_urls):
         "qty": len(processed_urls),
         "urls": set_default(processed_urls),
     }
-    report["local_urls"] = {"qty": len(local_urls), "urls": set_default(local_urls)}
+    report["local_urls"] = {
+        "qty": len(local_urls),
+        "urls": set_default(local_urls),
+    }
     report["foreign_urls"] = {
         "qty": len(foreign_urls),
         "urls": set_default(foreign_urls),
     }
-    report["broken_urls"] = {"qty": len(broken_urls), "urls": set_default(broken_urls)}
+    report["broken_urls"] = {
+        "qty": len(broken_urls),
+        "urls": set_default(broken_urls),
+    }
 
     save_report(report)
 
